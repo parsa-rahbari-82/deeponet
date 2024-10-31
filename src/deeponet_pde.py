@@ -254,10 +254,10 @@ def main():
 
     # Hyperparameters
     m = 100
-    num_train = 1000
-    num_test = 10000
+    num_train = 100
+    num_test = 1000
     lr = 0.001
-    epochs = 50000
+    epochs = 5000
 
     # Network
     nn = "fnn"
