@@ -169,7 +169,7 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
         "model/model.ckpt", save_better_only=True, period=1000
     )
     losshistory, train_state = model.train(epochs=epochs, callbacks=[checker])
-    print("# Parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+    print("# Parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.compat.v1.trainable_variables()]))
     dde.saveplot(losshistory, train_state, issave=True, isplot=True)
 
     model.restore("model/model.ckpt-" + str(train_state.best_step), verbose=1)
@@ -253,10 +253,10 @@ def main():
 
     # Hyperparameters
     m = 100
-    num_train = 10000
-    num_test = 100000
+    num_train = 1000
+    num_test = 2000
     lr = 0.001
-    epochs = 50000
+    epochs = 5000
 
     # Network
     nn = "fnn"
