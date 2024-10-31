@@ -128,8 +128,10 @@ def cvc_system(T, npoints_output):
 
 def advd_system(T, npoints_output):
     """Advection-diffusion"""
-    f = None
-    g = None
+    # source term
+    f = 10
+    # boundary condition
+    g = [3 , 0]
     Nt = 100
     return ADVDSystem(f, g, T, Nt, npoints_output)
 
@@ -171,7 +173,6 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
     losshistory, train_state = model.train(epochs=epochs, callbacks=[checker])
     print("# Parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.compat.v1.trainable_variables()]))
     dde.saveplot(losshistory, train_state, issave=True, isplot=True)
-
     model.restore("model/model.ckpt-" + str(train_state.best_step), verbose=1)
     safe_test(model, data, X_test, y_test)
 
@@ -227,7 +228,7 @@ def main():
     # - "dr": Diffusion-reaction
     # - "cvc": Advection
     # - "advd": Advection-diffusion
-    problem = "ode"
+    problem = "advd"
     T = 1
     if problem == "lt":
         npoints_output = 20
@@ -254,9 +255,9 @@ def main():
     # Hyperparameters
     m = 100
     num_train = 1000
-    num_test = 2000
+    num_test = 10000
     lr = 0.001
-    epochs = 5000
+    epochs = 50000
 
     # Network
     nn = "fnn"
@@ -264,7 +265,7 @@ def main():
     initializer = "Glorot normal"  # "He normal" or "Glorot normal"
     dim_x = 1 if problem in ["ode", "lt"] else 2
     if nn == "opnn":
-        net = dde.maps.OpNN(
+        net = dde.maps.DeepONet(
             [m, 40, 40],
             [dim_x, 40, 40],
             activation,
