@@ -1,16 +1,15 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import itertools
 
+import deepxde as dde
 import numpy as np
 import tensorflow as tf
 
-import deepxde as dde
-from spaces import FinitePowerSeries, FiniteChebyshev, GRF
-from system import LTSystem, ODESystem, DRSystem, CVCSystem, ADVDSystem
-from utils import merge_values, trim_to_65535, mean_squared_error_outlier, safe_test
+from spaces import GRF, FiniteChebyshev, FinitePowerSeries
+from system import ADVDSystem, CVCSystem, DRSystem, LTSystem, ODESystem
+from utils import (mean_squared_error_outlier, merge_values, safe_test,
+                   trim_to_65535)
 
 
 def test_u_lt(nn, system, T, m, model, data, u, fname):
@@ -103,11 +102,11 @@ def ode_system(T):
         # Nonlinear ODE
         # return -s**2 + u
         # Gravity pendulum
-        # k = 1
-        # return [s[1], - k * np.sin(s[0]) + u]
+        k = 1
+        return [s[1], - k * np.sin(s[0]) + u]
 
-    s0 = [0]
-    # s0 = [0, 0]  # Gravity pendulum
+    #s0 = [0]
+    s0 = [0, 0]  # Gravity pendulum
     return ODESystem(g, s0, T)
 
 
@@ -260,7 +259,7 @@ def main():
     epochs = 50000
 
     # Network
-    nn = "opnn"
+    nn = "fnn"
     activation = "relu"
     initializer = "Glorot normal"  # "He normal" or "Glorot normal"
     dim_x = 1 if problem in ["ode", "lt"] else 2
