@@ -223,7 +223,6 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 
 
 def main(args):
-    print(args)
     # Problems:
     # - "lt": Legendre transform
     # - "ode": Antiderivative, Nonlinear ODE, Gravity pendulum
@@ -265,7 +264,6 @@ def main(args):
     nn = args.nn
     activation = args.activation
     initializer = args.init  # "He normal" or "Glorot normal"
-    print(initializer)
     dim_x = 1 if problem in ["ode", "lt"] else 2
     if nn == "deeponet":
         net = dde.maps.DeepONet(
@@ -313,7 +311,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.init = process_initializer(args.init)
     args.stacked = args.stacked.lower() == 'true'
-    print(args.init)
     main(args)
 
 
