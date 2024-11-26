@@ -21,7 +21,7 @@ def test_u_lt(nn, system, T, m, model, data, u, fname):
     ns = np.arange(system.npoints_output)[:, None]
     X_test = [np.tile(sensor_value, (system.npoints_output, 1)), ns]
     y_test = s
-    if nn != "opnn":
+    if nn != "deeponet":
         X_test = merge_values(X_test)
     y_pred = model.predict(data.transform_inputs(X_test))
     np.savetxt("test/u_" + fname, sensor_value)
@@ -35,7 +35,7 @@ def test_u_ode(nn, system, T, m, model, data, u, fname, num=100):
     x = np.linspace(0, T, num=num)[:, None]
     X_test = [np.tile(sensor_values.T, (num, 1)), x]
     y_test = system.eval_s_func(u, x)
-    if nn != "opnn":
+    if nn != "deeponet":
         X_test = merge_values(X_test)
     y_pred = model.predict(data.transform_inputs(X_test))
     np.savetxt(fname, np.hstack((x, y_test, y_pred)))
@@ -51,7 +51,7 @@ def test_u_dr(nn, system, T, m, model, data, u, fname):
     xt = xt * [1 / (m - 1), T / (system.Nt - 1)]
     X_test = [np.tile(sensor_value, (m * system.Nt, 1)), xt]
     y_test = s.reshape([m * system.Nt, 1])
-    if nn != "opnn":
+    if nn != "deeponet":
         X_test = merge_values(X_test)
     y_pred = model.predict(data.transform_inputs(X_test))
     np.savetxt(fname, np.hstack((xt, y_test, y_pred)))
@@ -66,7 +66,7 @@ def test_u_cvc(nn, system, T, m, model, data, u, fname):
     xt = xt * [1 / (m - 1), T / (system.Nt - 1)]
     X_test = [np.tile(sensor_value, (m * system.Nt, 1)), xt]
     y_test = s.reshape([m * system.Nt, 1])
-    if nn != "opnn":
+    if nn != "deeponet":
         X_test = merge_values(X_test)
     y_pred = model.predict(data.transform_inputs(X_test))
     np.savetxt("test/u_" + fname, sensor_value)
@@ -82,7 +82,7 @@ def test_u_advd(nn, system, T, m, model, data, u, fname):
     xt = xt * [1 / (m - 1), T / (system.Nt - 1)]
     X_test = [np.tile(sensor_value, (m * system.Nt, 1)), xt]
     y_test = s.reshape([m * system.Nt, 1])
-    if nn != "opnn":
+    if nn != "deeponet":
         X_test = merge_values(X_test)
     y_pred = model.predict(data.transform_inputs(X_test))
     np.savetxt("test/u_" + fname, sensor_value)
@@ -142,7 +142,7 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 
     X_train, y_train = system.gen_operator_data(space, m, num_train)
     X_test, y_test = system.gen_operator_data(space, m, num_test)
-    if nn != "opnn":
+    if nn != "deeponet":
         X_train = merge_values(X_train)
         X_test = merge_values(X_test)
 
@@ -157,7 +157,7 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 
     X_test_trim = trim_to_65535(X_test)[0]
     y_test_trim = trim_to_65535(y_test)[0]
-    if nn == "opnn":
+    if nn == "deeponet":
         data = dde.data.Triple(
             X_train=X_train, y_train=y_train, X_test=X_test_trim, y_test=y_test_trim
         )
@@ -223,6 +223,7 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 
 
 def main(args):
+    print(args)
     # Problems:
     # - "lt": Legendre transform
     # - "ode": Antiderivative, Nonlinear ODE, Gravity pendulum
@@ -230,7 +231,7 @@ def main(args):
     # - "cvc": Advection
     # - "advd": Advection-diffusion
     problem = args.problem
-    T = 1
+    T = args.t
     if problem == "lt":
         npoints_output = 20
         system = lt_system(npoints_output)
@@ -254,25 +255,26 @@ def main(args):
     # space = GRF(T, length_scale=0.2, N=1000 * T, interp="cubic")
 
     # Hyperparameters
-    m = 100
-    num_train = 100
-    num_test = 1000
-    lr = 0.001
-    epochs = 5000
+    m = args.m
+    num_train = args.num_train
+    num_test = args.num_test
+    lr = args.lr
+    epochs = args.epochs
 
     # Network
-    nn = "opnn"
-    activation = "relu"
-    initializer = "Glorot normal"  # "He normal" or "Glorot normal"
+    nn = args.nn
+    activation = args.activation
+    initializer = args.init  # "He normal" or "Glorot normal"
+    print(initializer)
     dim_x = 1 if problem in ["ode", "lt"] else 2
-    if nn == "opnn":
+    if nn == "deeponet":
         net = dde.maps.DeepONet(
             [m, 40, 40],
             [dim_x, 40, 40],
             activation,
             initializer,
             use_bias=True,
-            stacked=False,
+            stacked=args.stacked,
         )
     elif nn == "fnn":
         net = dde.maps.FNN([m + dim_x] + [100] * 2 + [1], activation, initializer)
@@ -283,19 +285,35 @@ def main(args):
 
 
 if __name__ == "__main__":
+    
+    def process_initializer(value):
+        if value == 'Glorot':
+            return 'Glorot normal'
+        else:
+            return 'He normal'
+ 
     parser = argparse.ArgumentParser()
     parser.add_argument('-p','--problem', type=str, choices=['lt','ode', 'dr', 'cvc', 'advd'], help="Type of differential equation", required=True)
     parser.add_argument('-t', type=int, default=1, help="Final time in domain (defualt=1)")
     parser.add_argument('-m', type=int, help="number of sensors", required=True)
     parser.add_argument('--num-train', type=int, help="number of train data", required=True)
     parser.add_argument('--num-test', type=int, help="number of test data", required=True)
-    parser.add_argument('--lr', type=int, default=1e-3, help="learning rate (default=1e-3)")
+    parser.add_argument('--lr', type=float, default=1e-3, help="learning rate (default=1e-3)")
     parser.add_argument('--epochs', type=int, help="number of epochs", required=True)
-    parser.add_argument('--nn', type=str, choices=['fnn', 'opnn', 'resnet'], help="Type of nueral network", default='fnn')
+    parser.add_argument('--nn', type=str, choices=['fnn', 'deeponet', 'resnet'], help="Type of nueral network", default='deeponet')
     parser.add_argument('--activation', type=str, choices=['elu', 'gelu', 'relu', 'selu', 'sigmoid', 'silu', 'sin', 'swish', 'tanh'], help="Activation function", default='relu')
-    parser.add_argument('--init', type=str, help="Activation function", default='relu')
+    parser.add_argument(
+    '--init',
+    type=str,
+    choices=['He', 'Glorot'],
+    default='Glorot',  # Default initializer
+    help="Specify the initializer (choose from 'He [normal]', 'Glorot [normal]')"
+    )
+    parser.add_argument('--stacked',type=str,default=False,help="Specify whether to use stacked architecture (usage for --nn is 'deeponet')")
     args = parser.parse_args()
-    print(args.m)
+    args.init = process_initializer(args.init)
+    args.stacked = args.stacked.lower() == 'true'
+    print(args.init)
     main(args)
 
 
