@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import argparse
 import itertools
 
 import deepxde as dde
@@ -157,7 +158,7 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
     X_test_trim = trim_to_65535(X_test)[0]
     y_test_trim = trim_to_65535(y_test)[0]
     if nn == "opnn":
-        data = dde.data.OpDataSet(
+        data = dde.data.Triple(
             X_train=X_train, y_train=y_train, X_test=X_test_trim, y_test=y_test_trim
         )
     else:
@@ -221,14 +222,14 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
             test_u_advd(nn, system, T, m, model, data, lambda x: u[i], str(i) + ".dat")
 
 
-def main():
+def main(args):
     # Problems:
     # - "lt": Legendre transform
     # - "ode": Antiderivative, Nonlinear ODE, Gravity pendulum
     # - "dr": Diffusion-reaction
     # - "cvc": Advection
     # - "advd": Advection-diffusion
-    problem = "advd"
+    problem = args.problem
     T = 1
     if problem == "lt":
         npoints_output = 20
@@ -260,7 +261,7 @@ def main():
     epochs = 5000
 
     # Network
-    nn = "fnn"
+    nn = "opnn"
     activation = "relu"
     initializer = "Glorot normal"  # "He normal" or "Glorot normal"
     dim_x = 1 if problem in ["ode", "lt"] else 2
@@ -282,4 +283,19 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p','--problem', type=str, choices=['lt','ode', 'dr', 'cvc', 'advd'], help="Type of differential equation", required=True)
+    parser.add_argument('-t', type=int, default=1, help="Final time in domain (defualt=1)")
+    parser.add_argument('-m', type=int, help="number of sensors", required=True)
+    parser.add_argument('--num-train', type=int, help="number of train data", required=True)
+    parser.add_argument('--num-test', type=int, help="number of test data", required=True)
+    parser.add_argument('--lr', type=int, default=1e-3, help="learning rate (default=1e-3)")
+    parser.add_argument('--epochs', type=int, help="number of epochs", required=True)
+    parser.add_argument('--nn', type=str, choices=['fnn', 'opnn', 'resnet'], help="Type of nueral network", default='fnn')
+    parser.add_argument('--activation', type=str, choices=['elu', 'gelu', 'relu', 'selu', 'sigmoid', 'silu', 'sin', 'swish', 'tanh'], help="Activation function", default='relu')
+    parser.add_argument('--init', type=str, help="Activation function", default='relu')
+    args = parser.parse_args()
+    print(args.m)
+    main(args)
+
+
