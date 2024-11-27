@@ -36,7 +36,9 @@ def test_u_ode(nn, system, T, m, model, data, u, fname, num=100):
     y_test = system.eval_s_func(u, x)
     if nn != "deeponet":
         X_test = merge_values(X_test)
-    y_pred = model.predict(data.transform_inputs(X_test))
+        
+    X_test = tuple([arr.astype(dtype=np.float32) for arr in X_test])
+    y_pred = model.predict(X_test)
     np.savetxt(fname, np.hstack((x, y_test, y_pred)))
     print("L2relative error:", dde.metrics.l2_relative_error(y_test, y_pred))
 
@@ -141,7 +143,6 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 
     X_train, y_train = system.gen_operator_data(space, m, num_train)
     X_test, y_test = system.gen_operator_data(space, m, num_test)
-
     if nn != "deeponet":
         X_train = merge_values(X_train)
         X_test = merge_values(X_test)
@@ -157,19 +158,9 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 
     X_test_trim = trim_to_65535(X_test)[0]
     y_test_trim = trim_to_65535(y_test)[0]
-    
-
     if nn == "deeponet":
-        X_train = [arr.astype(dtype=np.float32) for arr in X_train]
-        y_train = [arr.astype(dtype=np.float32) for arr in y_train]
-            
-        y_train = np.concatenate([np.array(i, dtype=np.float32) for i in y_train])
-        y_test = np.concatenate([np.array(i, dtype=np.float32) for i in y_test])
         data = dde.data.Triple(
-            X_train=X_train, 
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
+            X_train=X_train, y_train=y_train, X_test=X_test_trim, y_test=y_test_trim
         )
     else:
         data = dde.data.DataSet(
@@ -184,7 +175,7 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
     losshistory, train_state = model.train(epochs=epochs, callbacks=[checker])
     print("# Parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.compat.v1.trainable_variables()]))
     dde.saveplot(losshistory, train_state, issave=True, isplot=True)
-    model.restore(f"model/model-{train_state.best_step}.weights.h5", verbose=1)
+    model.restore("model/model-" + str(train_state.best_step) + ".ckpt", verbose=1)
     safe_test(model, data, X_test, y_test)
 
     tests = [
@@ -281,6 +272,8 @@ def main(args):
             [dim_x, 40, 40],
             activation,
             initializer,
+            use_bias=True,
+            stacked=args.stacked,
         )
     elif nn == "fnn":
         net = dde.maps.FNN([m + dim_x] + [100] * 2 + [1], activation, initializer)
@@ -320,5 +313,3 @@ if __name__ == "__main__":
     args.init = process_initializer(args.init)
     args.stacked = args.stacked.lower() == 'true'
     main(args)
-
-

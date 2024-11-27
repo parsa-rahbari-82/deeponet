@@ -1,6 +1,4 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import sys
 import time
@@ -53,7 +51,7 @@ def safe_test(model, data, X_test, y_test, fname=None):
     X = X_test
     while is_nonempty(X):
         X_add, X = trim_to_65535(X)
-        y_pred.append(model.predict(data.transform_inputs(X_add)))
+        y_pred.append(model.predict(X_add))
     y_pred = np.vstack(y_pred)
     error = np.mean((y_test - y_pred) ** 2)
     print("Test MSE: {}".format(error))
