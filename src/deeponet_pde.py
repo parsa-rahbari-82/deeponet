@@ -6,7 +6,6 @@ import itertools
 import deepxde as dde
 import numpy as np
 import tensorflow as tf
-
 from spaces import GRF, FiniteChebyshev, FinitePowerSeries
 from system import ADVDSystem, CVCSystem, DRSystem, LTSystem, ODESystem
 from utils import (mean_squared_error_outlier, merge_values, safe_test,
@@ -142,6 +141,7 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 
     X_train, y_train = system.gen_operator_data(space, m, num_train)
     X_test, y_test = system.gen_operator_data(space, m, num_test)
+
     if nn != "deeponet":
         X_train = merge_values(X_train)
         X_test = merge_values(X_test)
@@ -157,9 +157,19 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 
     X_test_trim = trim_to_65535(X_test)[0]
     y_test_trim = trim_to_65535(y_test)[0]
+    
+
     if nn == "deeponet":
+        X_train = [arr.astype(dtype=np.float32) for arr in X_train]
+        y_train = [arr.astype(dtype=np.float32) for arr in y_train]
+            
+        y_train = np.concatenate([np.array(i, dtype=np.float32) for i in y_train])
+        y_test = np.concatenate([np.array(i, dtype=np.float32) for i in y_test])
         data = dde.data.Triple(
-            X_train=X_train, y_train=y_train, X_test=X_test_trim, y_test=y_test_trim
+            X_train=X_train, 
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
         )
     else:
         data = dde.data.DataSet(
@@ -169,12 +179,12 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
     model = dde.Model(data, net)
     model.compile("adam", lr=lr, metrics=[mean_squared_error_outlier])
     checker = dde.callbacks.ModelCheckpoint(
-        "model/model.ckpt", save_better_only=True, period=1000
+        "model/model", save_better_only=True, period=1000
     )
     losshistory, train_state = model.train(epochs=epochs, callbacks=[checker])
     print("# Parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.compat.v1.trainable_variables()]))
     dde.saveplot(losshistory, train_state, issave=True, isplot=True)
-    model.restore("model/model.ckpt-" + str(train_state.best_step), verbose=1)
+    model.restore(f"model/model-{train_state.best_step}.weights.h5", verbose=1)
     safe_test(model, data, X_test, y_test)
 
     tests = [
@@ -271,8 +281,6 @@ def main(args):
             [dim_x, 40, 40],
             activation,
             initializer,
-            use_bias=True,
-            stacked=args.stacked,
         )
     elif nn == "fnn":
         net = dde.maps.FNN([m + dim_x] + [100] * 2 + [1], activation, initializer)
