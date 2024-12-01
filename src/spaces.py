@@ -1,14 +1,11 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
+import config
 import matplotlib.pyplot as plt
 import numpy as np
 from pathos.pools import ProcessPool
-from scipy import linalg, interpolate
+from scipy import interpolate, linalg
 from sklearn import gaussian_process as gp
-
-import config
 from utils import eig
 
 

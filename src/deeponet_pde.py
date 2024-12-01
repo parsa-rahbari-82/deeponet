@@ -22,7 +22,8 @@ def test_u_lt(nn, system, T, m, model, data, u, fname):
     y_test = s
     if nn != "deeponet":
         X_test = merge_values(X_test)
-    y_pred = model.predict(data.transform_inputs(X_test))
+    X_test = tuple([arr.astype(dtype=np.float32) for arr in X_test])
+    y_pred = model.predict(X_test)
     np.savetxt("test/u_" + fname, sensor_value)
     np.savetxt("test/s_" + fname, np.hstack((ns, y_test, y_pred)))
 
@@ -54,7 +55,9 @@ def test_u_dr(nn, system, T, m, model, data, u, fname):
     y_test = s.reshape([m * system.Nt, 1])
     if nn != "deeponet":
         X_test = merge_values(X_test)
-    y_pred = model.predict(data.transform_inputs(X_test))
+    
+    X_test = tuple([arr.astype(dtype=np.float32) for arr in X_test])
+    y_pred = model.predict(X_test)
     np.savetxt(fname, np.hstack((xt, y_test, y_pred)))
 
 
@@ -69,7 +72,9 @@ def test_u_cvc(nn, system, T, m, model, data, u, fname):
     y_test = s.reshape([m * system.Nt, 1])
     if nn != "deeponet":
         X_test = merge_values(X_test)
-    y_pred = model.predict(data.transform_inputs(X_test))
+    
+    X_test = tuple([arr.astype(dtype=np.float32) for arr in X_test])
+    y_pred = model.predict(X_test)
     np.savetxt("test/u_" + fname, sensor_value)
     np.savetxt("test/s_" + fname, np.hstack((xt, y_test, y_pred)))
 
@@ -85,14 +90,16 @@ def test_u_advd(nn, system, T, m, model, data, u, fname):
     y_test = s.reshape([m * system.Nt, 1])
     if nn != "deeponet":
         X_test = merge_values(X_test)
-    y_pred = model.predict(data.transform_inputs(X_test))
+    
+    X_test = tuple([arr.astype(dtype=np.float32) for arr in X_test])
+    y_pred = model.predict(X_test)
     np.savetxt("test/u_" + fname, sensor_value)
     np.savetxt("test/s_" + fname, np.hstack((xt, y_test, y_pred)))
 
 
-def lt_system(npoints_output):
+def lt_system(npoints_output, T):
     """Legendre transform"""
-    return LTSystem(npoints_output)
+    return LTSystem(npoints_output, T)
 
 
 def ode_system(T):
@@ -198,7 +205,7 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 
     if problem == "lt":
         features = space.random(10)
-        sensors = np.linspace(0, 2, num=m)[:, None]
+        sensors = np.linspace(0, T, num=m)[:, None]
         u = space.eval_u(features, sensors)
         for i in range(u.shape[0]):
             test_u_lt(nn, system, T, m, model, data, lambda x: u[i], str(i) + ".dat")
@@ -234,7 +241,7 @@ def main(args):
     T = args.t
     if problem == "lt":
         npoints_output = 20
-        system = lt_system(npoints_output)
+        system = lt_system(npoints_output, T)
     elif problem == "ode":
         system = ode_system(T)
     elif problem == "dr":
@@ -251,8 +258,8 @@ def main(args):
     # space = FinitePowerSeries(N=100, M=1)
     # space = FiniteChebyshev(N=20, M=1)
     # space = GRF(2, length_scale=0.2, N=2000, interp="cubic")  # "lt"
-    space = GRF(1, length_scale=0.2, N=1000, interp="cubic")
-    # space = GRF(T, length_scale=0.2, N=1000 * T, interp="cubic")
+    # space = GRF(1, length_scale=0.2, N=1000, interp="cubic")
+    space = GRF(T, length_scale=0.2, N=1000 * T, interp="cubic")
 
     # Hyperparameters
     m = args.m
@@ -308,8 +315,9 @@ if __name__ == "__main__":
     default='Glorot',  # Default initializer
     help="Specify the initializer (choose from 'He [normal]', 'Glorot [normal]')"
     )
-    parser.add_argument('--stacked',type=str,default=False,help="Specify whether to use stacked architecture (usage for --nn is 'deeponet')")
+    parser.add_argument('--stacked',type=str,default='False',help="Specify whether to use stacked architecture (usage for --nn is 'deeponet')")
     args = parser.parse_args()
     args.init = process_initializer(args.init)
-    args.stacked = args.stacked.lower() == 'true'
+    if args.nn == 'deeponet':    
+        args.stacked = args.stacked.lower() == 'true'
     main(args)

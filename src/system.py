@@ -1,28 +1,26 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
+import config
 import numpy as np
+from ADR_solver import solve_ADR
+from ADVD_solver import solve_ADVD
+from CVC_solver import solve_CVC
 from pathos.pools import ProcessPool
 from scipy import interpolate
 from scipy.integrate import solve_ivp
 from scipy.special import legendre
-
-import config
-from ADR_solver import solve_ADR
-from ADVD_solver import solve_ADVD
-from CVC_solver import solve_CVC
 from utils import timing
 
 
 class LTSystem(object):
-    def __init__(self, npoints_output):
+    def __init__(self, npoints_output, T):
         """Legendre transform J_n{f(x)}.
 
         Args:
             npoints_output: For a input function, choose n=0,1,2,...,`npoints_output`-1 as data.
         """
         self.npoints_output = npoints_output
+        self.T = T
 
     @timing
     def gen_operator_data(self, space, m, num):
@@ -30,7 +28,7 @@ class LTSystem(object):
         """
         print("Generating operator data...", flush=True)
         features = space.random(num)
-        sensors = np.linspace(0, 2, num=m)[:, None]
+        sensors = np.linspace(0, self.T, num=m)[:, None]
         sensor_values = space.eval_u(features, sensors)
 
         sensor_values_tile = np.tile(sensor_values, (1, self.npoints_output)).reshape(
