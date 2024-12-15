@@ -1,11 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import argparse
 import itertools
-
 import deepxde as dde
 import numpy as np
 import tensorflow as tf
+
 from spaces import GRF, FiniteChebyshev, FinitePowerSeries
 from system import ADVDSystem, CVCSystem, DRSystem, LTSystem, ODESystem
 from utils import (mean_squared_error_outlier, merge_values, safe_test,

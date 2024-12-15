@@ -1,12 +1,11 @@
-from __future__ import absolute_import, division, print_function
-
-import config
 import matplotlib.pyplot as plt
 import numpy as np
 from pathos.pools import ProcessPool
 from scipy import interpolate, linalg
 from sklearn import gaussian_process as gp
+
 from utils import eig
+import config
 
 
 class FinitePowerSeries:

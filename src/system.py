@@ -1,15 +1,14 @@
-from __future__ import absolute_import, division, print_function
-
-import config
 import numpy as np
-from ADR_solver import solve_ADR
-from ADVD_solver import solve_ADVD
-from CVC_solver import solve_CVC
 from pathos.pools import ProcessPool
 from scipy import interpolate
 from scipy.integrate import solve_ivp
 from scipy.special import legendre
+
+from ADR_solver import solve_ADR
+from ADVD_solver import solve_ADVD
+from CVC_solver import solve_CVC
 from utils import timing
+import config
 
 
 class LTSystem(object):
