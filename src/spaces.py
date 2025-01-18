@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import config
+
 from pathos.pools import ProcessPool
 from scipy import interpolate, linalg
 from sklearn import gaussian_process as gp
-
 from utils import eig
-import config
 
 
 class FinitePowerSeries:

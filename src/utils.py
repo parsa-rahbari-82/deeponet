@@ -1,8 +1,9 @@
 import sys
 import time
+import numpy as np
+
 from functools import wraps
 
-import numpy as np
 
 
 def timing(f):
