@@ -136,7 +136,7 @@ def cvc_system(T, npoints_output):
 def advd_system(T, npoints_output):
     """Advection-diffusion"""
     # source term
-    f = 10
+    f = 1
     # boundary condition
     g = [3 , 0]
     Nt = 100
@@ -151,15 +151,6 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
     if nn != "deeponet":
         X_train = merge_values(X_train)
         X_test = merge_values(X_test)
-
-    # np.savez_compressed("train.npz", X_train0=X_train[0], X_train1=X_train[1], y_train=y_train)
-    # np.savez_compressed("test.npz", X_test0=X_test[0], X_test1=X_test[1], y_test=y_test)
-    # return
-
-    # d = np.load("train.npz")
-    # X_train, y_train = (d["X_train0"], d["X_train1"]), d["y_train"]
-    # d = np.load("test.npz")
-    # X_test, y_test = (d["X_test0"], d["X_test1"]), d["y_test"]
 
     X_test_trim = trim_to_65535(X_test)[0]
     y_test_trim = trim_to_65535(y_test)[0]
