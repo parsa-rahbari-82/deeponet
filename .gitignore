@@ -173,7 +173,7 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 # train- test data
-*.dat
+src/*.dat
 
 # Model CheckPoints
 model
